@@ -207,36 +207,80 @@
 	let currentMemo = $state('');
 	let editingMemo: Memo | null = $state(null);  // 編集中のメモ
 
-	async function addMemo(e?: maplibregl.MapMouseEvent) {
-		const position = e 
-			? { lat: e.lngLat.lat, lng: e.lngLat.lng }
-			: currentPosition;
+async function addMemo() {
+    if (!currentPosition) {
+        console.error('位置情報が取得できてないよ！');
+        return;
+    }
 
-		if (!position) {
-			console.error('位置情報が取得できてないよ！');
-			return;
-		}
+    const date = new Date().toISOString();
+    const id = crypto.randomUUID();
 
-		const date = new Date().toISOString();
-		const id = crypto.randomUUID();
+    // マーカーを作成
+    const marker = new maplibregl.Marker()
+        .setLngLat([currentPosition.lng, currentPosition.lat])
+        .addTo(map!);
 
-		// マーカーを作成
-		const marker = new maplibregl.Marker()
-			.setLngLat([position.lng, position.lat])
-			.addTo(map!);
+    const newMemo: Memo = {
+        id,
+        lat: currentPosition.lat,
+        lng: currentPosition.lng,
+        text: currentMemo,
+        date,
+        marker
+    };
 
-		const newMemo: Memo = {
-			id,
-			lat: position.lat,
-			lng: position.lng,
-			text: currentMemo,
-			date,
-			marker
-		};
+    memos = [...memos, newMemo];
+    currentMemo = '';
+}
 
-		memos = [...memos, newMemo];
-		currentMemo = '';
-	}
+// LocalStorageからメモを読み込む関数を追加
+function loadMemos() {
+    const savedMemos = localStorage.getItem('memos');
+    if (savedMemos) {
+        const parsedMemos = JSON.parse(savedMemos);
+        // マーカーを再作成
+        memos = parsedMemos.map((memo: Memo) => {
+            const marker = new maplibregl.Marker()
+                .setLngLat([memo.lng, memo.lat])
+                .addTo(map!);
+            return { ...memo, marker };
+        });
+    }
+}
+
+// メモを保存する関数を追加
+function saveMemos() {
+    // マーカーを除外してから保存
+    const memosForStorage = memos.map(memo => {
+        const { marker, ...memoWithoutMarker } = memo;
+        return memoWithoutMarker;
+    });
+    localStorage.setItem('memos', JSON.stringify(memosForStorage));
+}
+
+// メモが変更されたら自動的に保存
+$effect(() => {
+    if (memos.length > 0) {
+        saveMemos();
+    }
+});
+
+// マウント時にメモを読み込む
+onMount(() => {
+    watchCurrentPosition();
+    // マップが読み込まれた後にメモを読み込む
+    if (map) {
+        loadMemos();
+    }
+});
+
+// マップが読み込まれた後にメモを読み込む（念のため）
+$effect(() => {
+    if (map) {
+        loadMemos();
+    }
+});
 
 	function startEdit(memo: Memo) {
 		editingMemo = memo;
@@ -287,21 +331,19 @@
 	let isPressing = false;
 
 	function handleTouchStart(e: maplibregl.MapTouchEvent) {
-		isPressing = true;
-		pressTimer = window.setTimeout(() => {
-			if (isPressing && map) {
-				const touch = e.originalEvent.touches[0];  // originalEventを使う！
-				const point = map.project([touch.clientX, touch.clientY]);
-				const lngLat = map.unproject(point);
-				
-				addMemo({
-					lngLat,
-					preventDefault: () => e.preventDefault()
-				} as maplibregl.MapMouseEvent);
-			}
-		}, 800); // 0.8秒の長押しで発動
-	}
-
+			isPressing = true;
+			pressTimer = window.setTimeout(() => {
+				if (isPressing && map) {
+					const touch = e.originalEvent.touches[0];
+					const point = map.project([touch.clientX, touch.clientY]);
+					const lngLat = map.unproject(point);
+					
+					// Update currentPosition before adding memo
+					currentPosition = { lat: lngLat.lat, lng: lngLat.lng };
+					addMemo();
+				}
+			}, 800); // 0.8秒の長押しで発動
+		}
 	function handleTouchEnd(e: maplibregl.MapTouchEvent) {
 		isPressing = false;
 		if (pressTimer) {
@@ -338,7 +380,6 @@
         zoom={15}
         center={{ lng: 135.80578, lat: 34.89518 }}
         maxZoom={17.9}
-        ondblclick={addMemo}
         ontouchstart={handleTouchStart}
         ontouchend={handleTouchEnd}
         ontouchmove={handleTouchMove}
@@ -476,7 +517,7 @@
                         </button>
                     {:else}
                         <div class="text-sm text-gray-500 text-center p-4">
-                            メモがまだないよ！地図をダブルクリックしてメモを追加してね
+                            メモがまだないよ！下のタブからメモを追加してね
                         </div>
                     {/if}
                 </div>
