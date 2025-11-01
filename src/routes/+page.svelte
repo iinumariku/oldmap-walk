@@ -404,7 +404,7 @@ $effect(() => {
     <div class="absolute top-14 right-4 bg-white/80 p-2 rounded-lg shadow-lg z-10 text-xs text-gray-600">
         <div>地図データ：</div>
         <div> 国土地理院</div>
-        <div>OpenStreetMap contributors</div>
+        <div>© OpenStreetMap contributors</div>
         <div> 今昔マップ on the web</div>
 		<div>（京阪神圏1922-1923）</div>
     </div>
