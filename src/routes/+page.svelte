@@ -98,6 +98,7 @@
 		return gsiStyle;
 	}
 
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	function showCurrentPosition() {
 		if ('geolocation' in navigator) {
 			navigator.geolocation.getCurrentPosition(
@@ -178,7 +179,7 @@
 	}
 
 	// マーカーのスタイルを定義する関数を追加
-	function createLocationMarker(map: maplibregl.Map) {
+	function createLocationMarker(_map: maplibregl.Map) {
 		// 外側の青い円
 		const outer = document.createElement('div');
 		outer.className = 'location-marker-outer';
@@ -314,6 +315,7 @@
 	function saveMemos() {
 		// マーカーを除外してから保存
 		const memosForStorage = memos.map((memo) => {
+			// eslint-disable-next-line @typescript-eslint/no-unused-vars
 			const { marker, ...memoWithoutMarker } = memo;
 			return memoWithoutMarker;
 		});
@@ -374,14 +376,24 @@
 
 	function escapeCSV(field: string | number): string {
 		const str = String(field);
-		// Escape formula injection characters
-		if (/^[=+\-@]/.test(str)) {
-			return `'${str.replace(/"/g, '""')}"`;
+		// First check if we need to wrap in quotes
+		const needsQuotes =
+			str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r');
+		const hasFormulaChar = /^[=+\-@]/.test(str);
+
+		// Escape internal quotes
+		const escaped = str.replace(/"/g, '""');
+
+		// If starts with formula character, prefix with single quote to prevent formula injection
+		if (hasFormulaChar) {
+			return `"'${escaped}"`;
 		}
-		// Escape special CSV characters
-		if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
-			return `"${str.replace(/"/g, '""')}"`;
+
+		// If needs quotes, wrap it
+		if (needsQuotes) {
+			return `"${escaped}"`;
 		}
+
 		return str;
 	}
 
@@ -423,7 +435,7 @@
 			}
 		}, 800); // 0.8秒の長押しで発動
 	}
-	function handleTouchEnd(e: maplibregl.MapTouchEvent) {
+	function handleTouchEnd(_e: maplibregl.MapTouchEvent) {
 		isPressing = false;
 		if (pressTimer) {
 			clearTimeout(pressTimer);
@@ -431,7 +443,7 @@
 		}
 	}
 
-	function handleTouchMove(e: maplibregl.MapTouchEvent) {
+	function handleTouchMove(_e: maplibregl.MapTouchEvent) {
 		isPressing = false;
 		if (pressTimer) {
 			clearTimeout(pressTimer);
@@ -473,7 +485,7 @@
 				if (map) map.setStyle(updateStyle());
 			}}
 		>
-			{#each Object.entries(basemaps) as [value, label]}
+			{#each Object.entries(basemaps) as [value, label] (value)}
 				<option {value}>{label}</option>
 			{/each}
 		</select>
@@ -566,7 +578,7 @@
 				<div class="flex flex-col gap-2">
 					{#if memos.length > 0}
 						<div class="max-h-48 overflow-y-auto">
-							{#each memos as memo}
+							{#each memos as memo (memo.id)}
 								<div class="border-b p-2 text-sm">
 									<div class="flex justify-between">
 										<div>{memo.text}</div>
