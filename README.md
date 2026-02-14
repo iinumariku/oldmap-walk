@@ -60,14 +60,17 @@ You can preview the production build with `npm run preview`.
 ## 技術スタック
 
 ### フロントエンド
+
 - SvelteKit
 - TypeScript
 - TailwindCSS
 
 ### 地図ライブラリ
+
 - MapLibre GL JS
 
 ### 開発ツール
+
 - Vite
 - ESLint
 - Prettier
@@ -95,10 +98,12 @@ npm run preview
 ## 実装における技術的特徴
 
 1. **地図表示の最適化**
+
    - 効率的なタイル管理による描画パフォーマンスの向上
    - ズームレベルに応じた適切な地図データの表示
 
 2. **位置情報の活用**
+
    - HTML5 Geolocation APIの実装
    - リアルタイムな位置情報トラッキング
 
